@@ -22,12 +22,17 @@ const app = new Vue({
     el: '#app',
     data () {
       return {
-        messages: []
+        messages: [],
+        usersInRoom: []
       }
     },
     methods : {
       addMessage (message) {
         this.messages.push(message)
+        axios.post('/messages', message)
+          .then(response => {
+            // console.log(response)
+          })
       }
     },
     created () {
@@ -35,5 +40,22 @@ const app = new Vue({
         .then(response => {
           this.messages = response.data
         })
+
+      Echo.join('chat')
+        .here((users) => {
+          this.usersInRoom = users;
+        })
+        .joining((user) => {
+          this.usersInRoom.push(user)
+        })
+        .leaving((user) => {
+          this.usersInRoom = this.usersInRoom.filter(u => u != user)
+        })
+        .listen('MessagePosted', (e) => {
+          this.messages.push({
+            text: e.message.text,
+            user: e.user
+          })
+        });
     }
 });

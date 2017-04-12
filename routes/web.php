@@ -1,6 +1,7 @@
 <?php
 
 use App\Message;
+use App\Events\MessagePosted;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,12 +18,26 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/chat', function () {
-  return view('chat');
+Route::group(['middleware' => 'auth'], function () {
+  Route::get('/chat', function () {
+    return view('chat');
+  });
 });
 
 Route::get('/messages', function () {
   return Message::with('user')->get();
+});
+
+Route::post('/messages', function () {
+  $user = request()->user();
+
+  $message = $user->messages()->create([
+    'text' => request()->get('text')
+  ]);
+
+  broadcast(new MessagePosted($user, $message))->toOthers();
+
+  return ['code' => '200'];
 });
 
 Auth::routes();
